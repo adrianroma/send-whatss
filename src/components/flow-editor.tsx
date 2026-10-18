@@ -1,7 +1,7 @@
 "use client";
 
 import "@xyflow/react/dist/style.css";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   addEdge,
   Background,
@@ -20,9 +20,14 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 
-const STORAGE_KEY = "chatbot-flow";
-
-type Kind = "userRequest" | "userResponse" | "botRequest" | "botResponse";
+type Kind =
+  | "userRequest"
+  | "userResponse"
+  | "botRequest"
+  | "botResponse"
+  | "rules"
+  | "action"
+  | "determine";
 type FlowNodeData = { text: string };
 type FlowNode = Node<FlowNodeData, Kind>;
 
@@ -43,6 +48,18 @@ const KINDS: Record<Kind, { label: string; style: string }> = {
     label: "Respuesta del bot",
     style: "border-emerald-400 bg-emerald-50 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100",
   },
+  rules: {
+    label: "Reglas",
+    style: "border-violet-400 bg-violet-50 text-violet-900 dark:bg-violet-950 dark:text-violet-100",
+  },
+  action: {
+    label: "Acción",
+    style: "border-rose-400 bg-rose-50 text-rose-900 dark:bg-rose-950 dark:text-rose-100",
+  },
+  determine: {
+    label: "Determinar",
+    style: "border-orange-400 bg-orange-50 text-orange-900 dark:bg-orange-950 dark:text-orange-100",
+  },
 };
 
 function MessageNode({ id, type, data, selected }: NodeProps<FlowNode>) {
@@ -60,7 +77,18 @@ function MessageNode({ id, type, data, selected }: NodeProps<FlowNode>) {
         onChange={(e) => updateNodeData(id, { text: e.target.value })}
         className="nodrag nowheel w-full resize-none rounded bg-white/60 p-1 text-sm outline-none dark:bg-black/30"
       />
-      <Handle type="source" position={Position.Bottom} />
+      {type === "determine" ? (
+        <>
+          <div className="mt-1 flex justify-between px-4 text-[10px] font-bold opacity-70">
+            <span>Sí</span>
+            <span>No</span>
+          </div>
+          <Handle id="yes" type="source" position={Position.Bottom} style={{ left: "25%" }} />
+          <Handle id="no" type="source" position={Position.Bottom} style={{ left: "75%" }} />
+        </>
+      ) : (
+        <Handle type="source" position={Position.Bottom} />
+      )}
     </div>
   );
 }
@@ -70,6 +98,9 @@ const nodeTypes = {
   userResponse: MessageNode,
   botRequest: MessageNode,
   botResponse: MessageNode,
+  rules: MessageNode,
+  action: MessageNode,
+  determine: MessageNode,
 };
 
 const initial: { nodes: FlowNode[]; edges: Edge[] } = {
@@ -86,24 +117,33 @@ const initial: { nodes: FlowNode[]; edges: Edge[] } = {
   ],
 };
 
-function load() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as typeof initial;
-  } catch {}
-  return initial;
-}
-
-function Editor() {
-  const [start] = useState(load);
+function Editor({ start }: { start: typeof initial }) {
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>(start.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(start.edges);
   const { screenToFlowPosition } = useReactFlow();
 
+  const [status, setStatus] = useState<"saved" | "saving" | "error">("saved");
+  const firstRun = useRef(true);
+
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ nodes, edges }));
-    } catch {}
+    if (firstRun.current) {
+      firstRun.current = false;
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setStatus("saving");
+      try {
+        const res = await fetch("/api/flow", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nodes, edges }),
+        });
+        setStatus(res.ok ? "saved" : "error");
+      } catch {
+        setStatus("error");
+      }
+    }, 600);
+    return () => clearTimeout(timer);
   }, [nodes, edges]);
 
   const onConnect = useCallback(
@@ -129,6 +169,9 @@ function Editor() {
             + {KINDS[k].label}
           </button>
         ))}
+        <span className="ml-auto self-center text-xs text-slate-500">
+          {status === "saving" ? "Guardando…" : status === "error" ? "Error al guardar" : "Guardado"}
+        </span>
       </div>
       <div className="h-[70vh] overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <ReactFlow
@@ -151,9 +194,20 @@ function Editor() {
 }
 
 export function FlowEditor() {
+  const [start, setStart] = useState<typeof initial | null>(null);
+
+  useEffect(() => {
+    fetch("/api/flow")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setStart(d?.flow ?? initial))
+      .catch(() => setStart(initial));
+  }, []);
+
+  if (!start) return <div className="h-[70vh] rounded-xl border border-slate-200 dark:border-slate-800" />;
+
   return (
     <ReactFlowProvider>
-      <Editor />
+      <Editor start={start} />
     </ReactFlowProvider>
   );
 }
