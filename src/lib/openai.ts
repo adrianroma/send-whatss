@@ -18,3 +18,14 @@ export function getAiClient(): OpenAI {
 }
 
 export const AI_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
+
+export function getAiConfig() {
+  const apiKey = process.env.DEEPSEEK_API_KEY ?? "";
+  return {
+    baseUrl: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com",
+    model: AI_MODEL,
+    trackingId: process.env.DEEPSEEK_TRACKING_ID || "",
+    hasKey: Boolean(apiKey),
+    maskedKey: apiKey ? `${apiKey.slice(0, 5)}…${apiKey.slice(-4)}` : "No configurado",
+  };
+}

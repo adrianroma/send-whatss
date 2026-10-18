@@ -1,4 +1,5 @@
 import { getWhatsAppConfig, listWhatsAppTemplates } from "@/lib/whatsapp";
+import { getAiConfig } from "@/lib/openai";
 import { WhatsAppTestCard } from "@/components/whatsapp-test-card";
 
 const templateStatusStyles: Record<string, string> = {
@@ -28,6 +29,7 @@ function ConfigRow({ label, value, ok }: { label: string; value: string; ok?: bo
 export default async function SettingsPage() {
   const whatsapp = getWhatsAppConfig();
   const phoneNumberIdOk = Boolean(whatsapp.phoneNumberId);
+  const ai = getAiConfig();
   const templatesResult = await listWhatsAppTemplates();
 
   return (
@@ -37,7 +39,7 @@ export default async function SettingsPage() {
           Configuración
         </h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Ajustes de integración con WhatsApp Cloud API (Meta Graph API)
+          Ajustes de integración con WhatsApp Cloud API (Meta Graph API) y DeepSeek
         </p>
       </div>
 
@@ -85,6 +87,29 @@ export default async function SettingsPage() {
               .env.local
             </code>{" "}
             (o en las variables de entorno del proyecto en Vercel) y reinicia el servidor.
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+        <div className="border-b border-slate-200 dark:border-slate-800 px-5 py-4">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-white">DeepSeek API</h2>
+        </div>
+        <div className="px-5">
+          <ConfigRow label="URL base" value={ai.baseUrl} />
+          <ConfigRow label="Modelo" value={ai.model} />
+          <ConfigRow label="API key" value={ai.maskedKey} ok={ai.hasKey} />
+          <ConfigRow label="Tracking ID" value={ai.trackingId || "No configurado"} />
+        </div>
+        <div className="border-t border-slate-200 dark:border-slate-800 px-5 py-4">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Se leen de{" "}
+            <code className="rounded bg-slate-100 dark:bg-slate-800 px-1 py-0.5">DEEPSEEK_API_KEY</code>,{" "}
+            <code className="rounded bg-slate-100 dark:bg-slate-800 px-1 py-0.5">DEEPSEEK_BASE_URL</code>,{" "}
+            <code className="rounded bg-slate-100 dark:bg-slate-800 px-1 py-0.5">DEEPSEEK_MODEL</code> y{" "}
+            <code className="rounded bg-slate-100 dark:bg-slate-800 px-1 py-0.5">DEEPSEEK_TRACKING_ID</code>{" "}
+            en <code className="rounded bg-slate-100 dark:bg-slate-800 px-1 py-0.5">.env.local</code>. La clave
+            nunca se envía al navegador; reinicia el servidor tras cambiarlas.
           </p>
         </div>
       </div>

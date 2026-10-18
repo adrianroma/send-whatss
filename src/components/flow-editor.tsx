@@ -125,26 +125,28 @@ function Editor({ start }: { start: typeof initial }) {
   const [status, setStatus] = useState<"saved" | "saving" | "error">("saved");
   const firstRun = useRef(true);
 
+  const save = useCallback(async () => {
+    setStatus("saving");
+    try {
+      const res = await fetch("/api/flow", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nodes, edges }),
+      });
+      setStatus(res.ok ? "saved" : "error");
+    } catch {
+      setStatus("error");
+    }
+  }, [nodes, edges]);
+
   useEffect(() => {
     if (firstRun.current) {
       firstRun.current = false;
       return;
     }
-    const timer = setTimeout(async () => {
-      setStatus("saving");
-      try {
-        const res = await fetch("/api/flow", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ nodes, edges }),
-        });
-        setStatus(res.ok ? "saved" : "error");
-      } catch {
-        setStatus("error");
-      }
-    }, 600);
+    const timer = setTimeout(save, 600);
     return () => clearTimeout(timer);
-  }, [nodes, edges]);
+  }, [save]);
 
   const onConnect = useCallback(
     (c: Connection) => setEdges((eds) => addEdge({ ...c, label: "" }, eds)),
@@ -169,7 +171,14 @@ function Editor({ start }: { start: typeof initial }) {
             + {KINDS[k].label}
           </button>
         ))}
-        <span className="ml-auto self-center text-xs text-slate-500">
+        <button
+          onClick={save}
+          disabled={status === "saving"}
+          className="ml-auto rounded-lg bg-slate-900 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-slate-900"
+        >
+          Guardar
+        </button>
+        <span className="self-center text-xs text-slate-500">
           {status === "saving" ? "Guardando…" : status === "error" ? "Error al guardar" : "Guardado"}
         </span>
       </div>
