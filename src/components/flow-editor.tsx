@@ -131,7 +131,7 @@ const initial: { nodes: FlowNode[]; edges: Edge[] } = {
 function Editor({ start }: { start: typeof initial }) {
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>(start.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(start.edges);
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, deleteElements } = useReactFlow();
 
   const [status, setStatus] = useState<"saved" | "saving" | "error">("saved");
   const firstRun = useRef(true);
@@ -159,6 +159,10 @@ function Editor({ start }: { start: typeof initial }) {
     return () => clearTimeout(timer);
   }, [save]);
 
+  const selectedNodes = nodes.filter((n) => n.selected);
+  const selectedEdges = edges.filter((e) => e.selected);
+  const hasSelection = selectedNodes.length > 0 || selectedEdges.length > 0;
+
   const onConnect = useCallback(
     (c: Connection) => setEdges((eds) => addEdge({ ...c, label: "" }, eds)),
     [setEdges]
@@ -183,9 +187,16 @@ function Editor({ start }: { start: typeof initial }) {
           </button>
         ))}
         <button
+          onClick={() => deleteElements({ nodes: selectedNodes, edges: selectedEdges })}
+          disabled={!hasSelection}
+          className="ml-auto rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 disabled:opacity-40 dark:border-red-800 dark:text-red-400"
+        >
+          Eliminar seleccionado
+        </button>
+        <button
           onClick={save}
           disabled={status === "saving"}
-          className="ml-auto rounded-lg bg-slate-900 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-slate-900"
+          className="rounded-lg bg-slate-900 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-slate-900"
         >
           Guardar
         </button>
