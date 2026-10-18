@@ -63,14 +63,25 @@ const KINDS: Record<Kind, { label: string; style: string }> = {
 };
 
 function MessageNode({ id, type, data, selected }: NodeProps<FlowNode>) {
-  const { updateNodeData } = useReactFlow();
+  const { updateNodeData, deleteElements } = useReactFlow();
   const kind = KINDS[type as Kind];
   return (
     <div
       className={`w-56 rounded-lg border-2 p-2 shadow-sm ${kind.style} ${selected ? "ring-2 ring-slate-900 dark:ring-white" : ""}`}
     >
       <Handle type="target" position={Position.Top} />
-      <div className="mb-1 text-[10px] font-bold uppercase tracking-wide opacity-70">{kind.label}</div>
+      <div className="mb-1 flex items-center justify-between">
+        <span className="text-[10px] font-bold uppercase tracking-wide opacity-70">{kind.label}</span>
+        <button
+          type="button"
+          title="Eliminar nodo"
+          aria-label="Eliminar nodo"
+          onClick={() => deleteElements({ nodes: [{ id }] })}
+          className="nodrag flex h-5 w-5 items-center justify-center rounded text-sm leading-none opacity-60 hover:bg-black/10 hover:opacity-100 dark:hover:bg-white/20"
+        >
+          ×
+        </button>
+      </div>
       <textarea
         value={data.text}
         rows={3}
@@ -190,6 +201,7 @@ function Editor({ start }: { start: typeof initial }) {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          deleteKeyCode={["Backspace", "Delete"]}
           colorMode="system"
           fitView
         >
