@@ -1,5 +1,6 @@
 import { getWhatsAppConfig, listWhatsAppTemplates } from "@/lib/whatsapp";
 import { getAiConfig } from "@/lib/openai";
+import { getRedis, getRedisConfig } from "@/lib/redis";
 import { WhatsAppTestCard } from "@/components/whatsapp-test-card";
 
 const templateStatusStyles: Record<string, string> = {
@@ -30,6 +31,18 @@ export default async function SettingsPage() {
   const whatsapp = getWhatsAppConfig();
   const phoneNumberIdOk = Boolean(whatsapp.phoneNumberId);
   const ai = getAiConfig();
+  const redis = getRedisConfig();
+  let redisStatus = redis.configured ? "Conectado" : "No configurado";
+  if (redis.configured) {
+    try {
+      await Promise.race([
+        getRedis().then((c) => c.ping()),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Tiempo de espera agotado")), 4000)),
+      ]);
+    } catch (err) {
+      redisStatus = `Error: ${err instanceof Error ? err.message : "no se pudo conectar"}`;
+    }
+  }
   const templatesResult = await listWhatsAppTemplates();
 
   return (
@@ -110,6 +123,29 @@ export default async function SettingsPage() {
             <code className="rounded bg-slate-100 dark:bg-slate-800 px-1 py-0.5">DEEPSEEK_TRACKING_ID</code>{" "}
             en <code className="rounded bg-slate-100 dark:bg-slate-800 px-1 py-0.5">.env.local</code>. La clave
             nunca se envía al navegador; reinicia el servidor tras cambiarlas.
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+        <div className="border-b border-slate-200 dark:border-slate-800 px-5 py-4">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Redis</h2>
+        </div>
+        <div className="px-5">
+          <ConfigRow label="Host" value={redis.host || "No configurado"} ok={redis.configured} />
+          <ConfigRow label="Puerto" value={String(redis.port)} />
+          <ConfigRow label="Usuario" value={redis.username} />
+          <ConfigRow label="Contraseña" value={redis.maskedPassword} ok={redis.hasPassword} />
+          <ConfigRow label="Estado" value={redisStatus} ok={redisStatus === "Conectado"} />
+        </div>
+        <div className="border-t border-slate-200 dark:border-slate-800 px-5 py-4">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Aquí se guarda el flujo del chatbot. Se leen de{" "}
+            <code className="rounded bg-slate-100 dark:bg-slate-800 px-1 py-0.5">REDIS_HOST</code>,{" "}
+            <code className="rounded bg-slate-100 dark:bg-slate-800 px-1 py-0.5">REDIS_PORT</code>,{" "}
+            <code className="rounded bg-slate-100 dark:bg-slate-800 px-1 py-0.5">REDIS_USERNAME</code> y{" "}
+            <code className="rounded bg-slate-100 dark:bg-slate-800 px-1 py-0.5">REDIS_PASSWORD</code> (en Vercel:
+            Settings → Environment Variables). La contraseña nunca se envía al navegador.
           </p>
         </div>
       </div>

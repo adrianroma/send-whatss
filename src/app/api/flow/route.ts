@@ -33,7 +33,7 @@ export async function PUT(request: Request) {
   } catch (err) {
     console.error("flow save error", err);
     return NextResponse.json(
-      { error: `No se pudo escribir public/flow.json (${err instanceof Error ? err.message : "error"})` },
+      { error: `No se pudo guardar el flujo (${err instanceof Error ? err.message : "error"})` },
       { status: 500 }
     );
   }
