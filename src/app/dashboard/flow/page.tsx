@@ -32,6 +32,29 @@ export default function FlowPage() {
           </li>
         </ul>
       </details>
+      <details className="rounded-lg border border-slate-200 p-3 text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400">
+        <summary className="cursor-pointer font-medium">Nodos de control</summary>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li>
+            <b>Inicio</b>: punto de entrada. Si existe, solo las Solicitudes del usuario conectadas a él pueden iniciar
+            una conversación nueva. Sus líneas <code>{"{x} = valor"}</code> se aplican al empezar.
+          </li>
+          <li>
+            <b>Espera</b>: detiene el flujo y espera el siguiente mensaje, que debe coincidir con una Respuesta del
+            usuario conectada.
+          </li>
+          <li>
+            <b>Pausa</b>: detiene el flujo; el siguiente mensaje, sea cual sea, lo reanuda desde las salidas de la pausa.
+          </li>
+          <li>
+            <b>Detener</b>: corta la ejecución en ese punto sin responder nada; se conservan las variables y el siguiente
+            mensaje se evalúa como una conversación nueva.
+          </li>
+          <li>
+            <b>Fin</b>: termina la conversación; el siguiente mensaje empieza de cero y se borran las variables.
+          </li>
+        </ul>
+      </details>
       <FlowLoader />
     </div>
   );

@@ -107,6 +107,7 @@ export async function runFlow(
   const result: ChatResult = { replies: [], actions: [], cursor: null, vars: {} };
   let steps = 0;
   let done = false;
+  let stopped = false;
 
   // {input} is always what the user really typed; {output} is what the last node generated.
   const vars: Vars = { ...stored, input: message, output: null };
@@ -242,6 +243,24 @@ export async function runFlow(
       if (!cumple) return;
       const { edge } = await choose(node, prose.join("\n"), outs(id), "Elige la salida a la que debe continuar el flujo.");
       if (edge) await visit(edge.target, id);
+    } else if (node.type === "await" || node.type === "pause") {
+      // await: wait for the next user node; pause: wait, then continue from here on the next message.
+      readLines(node);
+      vars.output = null;
+      result.cursor = id;
+      done = true;
+    } else if (node.type === "stop") {
+      // Halts this run silently; variables are kept.
+      readLines(node);
+      done = true;
+    } else if (node.type === "end") {
+      // Ends the conversation: variables are cleared.
+      readLines(node);
+      stopped = true;
+      done = true;
+    } else if (node.type === "start") {
+      readLines(node);
+      await walk(id);
     } else if (node.type === "determine") {
       const lines = readLines(node, true);
       const facts = lines
@@ -259,21 +278,44 @@ export async function runFlow(
     }
   }
 
-  // 1. Find the entry user node: answers to the pending question first, then fresh requests.
-  const pending = cursor && byId.has(cursor) ? outs(cursor).map((e) => byId.get(e.target)!).filter(isUser) : [];
-  let entry = await matchUserNode(pending);
-  if (!entry) entry = await matchUserNode(nodes.filter((n) => n.type === "userRequest"));
+  const waiting = cursor ? byId.get(cursor) : undefined;
+  let entry: FNode | null = null;
 
-  // 2. Walk the flow from there.
-  if (entry) {
-    userContext = interpolate(readLines(entry).join("\n"), vars);
-    await walk(entry.id);
+  if (waiting?.type === "pause") {
+    // 1a. A paused flow resumes from the pause node; the message only triggers it.
+    await walk(waiting.id);
+  } else {
+    // 1b. Answers to the pending question first, then fresh requests.
+    const pending = waiting ? outs(waiting.id).map((e) => byId.get(e.target)!).filter(isUser) : [];
+    entry = await matchUserNode(pending);
+
+    if (!entry) {
+      // New conversation: start nodes (when present) define which requests can begin it.
+      const starts = nodes.filter((n) => n.type === "start");
+      starts.forEach((s) => readLines(s));
+      const requests = starts.length
+        ? starts.flatMap((s) => outs(s.id).map((e) => byId.get(e.target)!)).filter((n) => n.type === "userRequest")
+        : nodes.filter((n) => n.type === "userRequest");
+      entry = await matchUserNode(requests);
+    }
+
+    // 2. Walk the flow from there.
+    if (entry) {
+      userContext = interpolate(readLines(entry).join("\n"), vars);
+      await walk(entry.id);
+    }
   }
 
-  if (!result.replies.length) result.replies.push({ kind: "botResponse", text: FALLBACK });
+  if (!result.replies.length && !done) {
+    result.replies.push({ kind: "botResponse", text: FALLBACK });
+  }
 
-  for (const [k, v] of Object.entries(vars)) {
-    if (v !== undefined && !RESERVED_VARS.includes(k)) result.vars[k] = v;
+  if (stopped) {
+    result.cursor = null; // conversation over: next message starts fresh, variables reset
+  } else {
+    for (const [k, v] of Object.entries(vars)) {
+      if (v !== undefined && !RESERVED_VARS.includes(k)) result.vars[k] = v;
+    }
   }
   return result;
 }

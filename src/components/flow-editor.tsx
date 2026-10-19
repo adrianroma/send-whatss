@@ -27,7 +27,12 @@ type Kind =
   | "botResponse"
   | "rules"
   | "action"
-  | "determine";
+  | "determine"
+  | "start"
+  | "await"
+  | "stop"
+  | "end"
+  | "pause";
 type FlowNodeData = {
   text: string;
   actionType?: "api" | "file";
@@ -65,6 +70,26 @@ const KINDS: Record<Kind, { label: string; style: string }> = {
     label: "Determinar",
     style: "border-orange-400 bg-orange-50 text-orange-900 dark:bg-orange-950 dark:text-orange-100",
   },
+  start: {
+    label: "Inicio",
+    style: "border-lime-500 bg-lime-50 text-lime-900 dark:bg-lime-950 dark:text-lime-100",
+  },
+  await: {
+    label: "Espera",
+    style: "border-cyan-400 bg-cyan-50 text-cyan-900 dark:bg-cyan-950 dark:text-cyan-100",
+  },
+  end: {
+    label: "Fin",
+    style: "border-zinc-700 bg-zinc-200 text-zinc-900 dark:bg-zinc-700 dark:text-zinc-100",
+  },
+  stop: {
+    label: "Detener",
+    style: "border-slate-500 bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100",
+  },
+  pause: {
+    label: "Pausa",
+    style: "border-yellow-500 bg-yellow-50 text-yellow-900 dark:bg-yellow-950 dark:text-yellow-100",
+  },
 };
 
 function MessageNode({ id, type, data, selected }: NodeProps<FlowNode>) {
@@ -74,7 +99,7 @@ function MessageNode({ id, type, data, selected }: NodeProps<FlowNode>) {
     <div
       className={`w-56 rounded-lg border-2 p-2 shadow-sm ${kind.style} ${selected ? "ring-2 ring-slate-900 dark:ring-white" : ""}`}
     >
-      <Handle type="target" position={Position.Top} />
+      {type !== "start" && <Handle type="target" position={Position.Top} />}
       <div className="mb-1 flex items-center justify-between">
         <span className="text-[10px] font-bold uppercase tracking-wide opacity-70">{kind.label}</span>
         <button
@@ -133,7 +158,7 @@ function MessageNode({ id, type, data, selected }: NodeProps<FlowNode>) {
           <Handle id="no" type="source" position={Position.Bottom} style={{ left: "75%" }} />
         </>
       ) : (
-        <Handle type="source" position={Position.Bottom} />
+        type !== "stop" && type !== "end" && <Handle type="source" position={Position.Bottom} />
       )}
     </div>
   );
@@ -147,6 +172,11 @@ const nodeTypes = {
   rules: MessageNode,
   action: MessageNode,
   determine: MessageNode,
+  start: MessageNode,
+  await: MessageNode,
+  stop: MessageNode,
+  end: MessageNode,
+  pause: MessageNode,
 };
 
 const initial: { nodes: FlowNode[]; edges: Edge[] } = {
