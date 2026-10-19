@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-const FLOW_FILE = path.join(process.cwd(), "configuration", "flow.json");
+const FLOW_FILE = path.join(process.cwd(), "public", "flow.json");
 
 export type FlowData = { nodes: unknown[]; edges: unknown[] };
 

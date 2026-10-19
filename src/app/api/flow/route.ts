@@ -28,6 +28,14 @@ export async function PUT(request: Request) {
   if (!Array.isArray(body.nodes) || !Array.isArray(body.edges)) {
     return NextResponse.json({ error: "nodes y edges deben ser arreglos" }, { status: 400 });
   }
-  await writeFlow({ nodes: body.nodes, edges: body.edges });
+  try {
+    await writeFlow({ nodes: body.nodes, edges: body.edges });
+  } catch (err) {
+    console.error("flow save error", err);
+    return NextResponse.json(
+      { error: `No se pudo escribir public/flow.json (${err instanceof Error ? err.message : "error"})` },
+      { status: 500 }
+    );
+  }
   return NextResponse.json({ ok: true });
 }
