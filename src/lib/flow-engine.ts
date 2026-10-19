@@ -90,8 +90,16 @@ export async function runFlow(message: string, cursor: string | null, history: C
   let steps = 0;
   let done = false;
   let data = "";
-  const withData = (s: string) => (data ? `${s}\n\nDatos obtenidos por una acción:\n${data}` : s);
-  const fill = (s: string) => s.replaceAll("{{data}}", data.slice(0, 1500));
+  // Text of the matched user node: reference context only, never the user's actual words.
+  let userContext = "";
+  const withData = (s: string) =>
+    s +
+    (userContext
+      ? `\n\nContexto del nodo de usuario (solo referencia de la intención esperada; lo que el usuario realmente escribió es el "Mensaje del usuario"):\n${userContext}`
+      : "") +
+    (data ? `\n\nDatos obtenidos por una acción:\n${data}` : "");
+  const fill = (s: string) =>
+    s.replaceAll("{{data}}", data.slice(0, 1500)).replaceAll("{{input}}", message);
 
   // Input: only user nodes can receive the message.
   async function matchUserNode(candidates: FNode[]) {
@@ -177,7 +185,10 @@ export async function runFlow(message: string, cursor: string | null, history: C
   if (!entry) entry = await matchUserNode(nodes.filter((n) => n.type === "userRequest"));
 
   // 2. Walk the flow from there.
-  if (entry) await walk(entry.id);
+  if (entry) {
+    userContext = text(entry);
+    await walk(entry.id);
+  }
 
   if (!result.replies.length) result.replies.push({ kind: "botResponse", text: FALLBACK });
   return result;
