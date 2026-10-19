@@ -199,6 +199,8 @@ function Editor({ start }: { start: typeof initial }) {
   const { screenToFlowPosition, deleteElements } = useReactFlow();
 
   const [status, setStatus] = useState<"saved" | "saving" | "error">("saved");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [expired, setExpired] = useState(false);
   const firstRun = useRef(true);
 
   const save = useCallback(async () => {
@@ -209,8 +211,17 @@ function Editor({ start }: { start: typeof initial }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nodes, edges }),
       });
-      setStatus(res.ok ? "saved" : "error");
+      if (res.ok) {
+        setStatus("saved");
+        setExpired(false);
+        return;
+      }
+      const body = await res.json().catch(() => null);
+      setExpired(res.status === 401);
+      setErrorMsg(res.status === 401 ? "Tu sesión expiró" : body?.error || `Error ${res.status}`);
+      setStatus("error");
     } catch {
+      setErrorMsg("Sin conexión con el servidor");
       setStatus("error");
     }
   }, [nodes, edges]);
@@ -266,8 +277,13 @@ function Editor({ start }: { start: typeof initial }) {
           Guardar
         </button>
         <span className="self-center text-xs text-slate-500">
-          {status === "saving" ? "Guardando…" : status === "error" ? "Error al guardar" : "Guardado"}
+          {status === "saving" ? "Guardando…" : status === "error" ? `Error al guardar: ${errorMsg}` : "Guardado"}
         </span>
+        {expired && (
+          <a href="/login?from=/dashboard/flow" target="_blank" className="self-center text-xs underline">
+            Iniciar sesión de nuevo
+          </a>
+        )}
       </div>
       <div className="h-[70vh] overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <ReactFlow
