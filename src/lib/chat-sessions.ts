@@ -1,6 +1,6 @@
-import type { ChatTurn } from "@/lib/flow-engine";
+import type { ChatTurn, StoredVars } from "@/lib/flow-engine";
 
-type Session = { cursor: string | null; history: ChatTurn[] };
+type Session = { cursor: string | null; history: ChatTurn[]; vars: StoredVars };
 
 // In-memory, per server instance: conversations restart if the server restarts.
 const g = globalThis as unknown as { __chatSessions?: Map<string, Session>; __seenMsgs?: Set<string> };
@@ -9,7 +9,7 @@ const seen = (g.__seenMsgs ??= new Set());
 
 export function getSession(key: string): Session {
   let s = sessions.get(key);
-  if (!s) sessions.set(key, (s = { cursor: null, history: [] }));
+  if (!s) sessions.set(key, (s = { cursor: null, history: [], vars: {} }));
   return s;
 }
 

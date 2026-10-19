@@ -31,8 +31,9 @@ async function handleMessage(msg: IncomingMessage) {
 
   const session = getSession(msg.from);
   try {
-    const result = await runFlow(text, session.cursor, session.history.slice(-6));
+    const result = await runFlow(text, session.cursor, session.history.slice(-6), session.vars);
     session.cursor = result.cursor;
+    session.vars = result.vars;
     session.history.push({ role: "user", text });
     for (const reply of result.replies) {
       session.history.push({ role: "bot", text: reply.text });

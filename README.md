@@ -1,4 +1,4 @@
-# Reco Autos — base app
+# Auto Matica — base app
 
 Next.js (App Router) base project with JWT-based authentication and a sample dashboard, ready to deploy on Vercel.
 

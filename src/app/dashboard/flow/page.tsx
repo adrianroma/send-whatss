@@ -10,6 +10,28 @@ export default function FlowPage() {
           para eliminar el seleccionado.
         </p>
       </div>
+      <details className="rounded-lg border border-slate-200 p-3 text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400">
+        <summary className="cursor-pointer font-medium">Variables y expresiones</summary>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li>
+            <code>{"{nombre}"}</code> inserta una variable; si no tiene valor se muestra <code>{"{null}"}</code> o{" "}
+            <code>{"{undefined}"}</code>.
+          </li>
+          <li>
+            <code>{"{input}"}</code> = lo que escribió el usuario · <code>{"{output}"}</code> = lo que generó el nodo
+            anterior · <code>{"{data}"}</code> = resultado de la última acción.
+          </li>
+          <li>
+            Asignar (en cualquier nodo que no sea Reglas/Determinar): <code>{"{ciudad} = {input}"}</code>. La línea no
+            se muestra al usuario.
+          </li>
+          <li>
+            Condiciones en Reglas/Determinar: <code>{"{a} == {b}"}</code>, <code>{"{a} like %hola%"}</code>,{" "}
+            <code>{"{a} yes in rojo, azul"}</code>, <code>{"{a} not in 1,2"}</code>, y se combinan con{" "}
+            <code>&&</code>, <code>||</code> y <code>!!</code> (negar). Las líneas sin variables se evalúan con IA.
+          </li>
+        </ul>
+      </details>
       <FlowLoader />
     </div>
   );

@@ -26,7 +26,7 @@ export default async function DashboardLayout({
               R
             </div>
             <span className="text-sm font-semibold text-slate-900 dark:text-white">
-              Reco Autos
+              Auto Matica
             </span>
           </div>
 

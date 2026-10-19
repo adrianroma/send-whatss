@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { runFlow, type ChatTurn } from "@/lib/flow-engine";
+import { RESERVED_VARS } from "@/lib/flow-vars";
+import { runFlow, type ChatTurn, type StoredVars } from "@/lib/flow-engine";
 
 // Public endpoint (used by the chat widget on "/"); input is size-limited.
 export async function POST(request: Request) {
-  let body: { message?: unknown; cursor?: unknown; history?: unknown };
+  let body: { message?: unknown; cursor?: unknown; history?: unknown; vars?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -24,8 +25,18 @@ export async function POST(request: Request) {
         .map((t) => ({ role: t.role, text: t.text.slice(0, 500) }))
     : [];
 
+  // Client-held variables: bounded and sanitized (reserved names are set by the engine).
+  const vars: StoredVars = {};
+  if (body.vars && typeof body.vars === "object" && !Array.isArray(body.vars)) {
+    for (const [k, v] of Object.entries(body.vars).slice(0, 50)) {
+      if (/^[A-Za-z_][\w.]*$/.test(k) && !RESERVED_VARS.includes(k) && (v === null || typeof v === "string")) {
+        vars[k] = v === null ? null : v.slice(0, 500);
+      }
+    }
+  }
+
   try {
-    return NextResponse.json(await runFlow(message, cursor, history));
+    return NextResponse.json(await runFlow(message, cursor, history, vars));
   } catch (err) {
     console.error("chat flow error", err);
     return NextResponse.json({ error: "No se pudo procesar el mensaje" }, { status: 500 });

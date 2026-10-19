@@ -10,6 +10,7 @@ export function ChatWidget() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [cursor, setCursor] = useState<string | null>(null);
+  const [vars, setVars] = useState<Record<string, string | null>>({});
   const bottom = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,11 +29,12 @@ export function ChatWidget() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, cursor, history }),
+        body: JSON.stringify({ message: text, cursor, history, vars }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setCursor(data.cursor);
+      setVars(data.vars ?? {});
       setMessages((m) => [
         ...m,
         ...data.replies.map((r: { text: string }): Msg => ({ role: "bot", text: r.text })),
