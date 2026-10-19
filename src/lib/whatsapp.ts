@@ -160,3 +160,29 @@ export async function listWhatsAppTemplates(): Promise<TemplatesResult> {
     };
   }
 }
+
+/** Sends a plain text message (valid within 24h of the user's last message). */
+export async function sendWhatsAppText(to: string, body: string): Promise<SendResult> {
+  const token = process.env.WHATSAPP_ACCESS_TOKEN;
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const apiVersion = process.env.WHATSAPP_API_VERSION || "v25.0";
+
+  if (!token || !phoneNumberId) {
+    throw new Error(
+      "WhatsApp no está configurado (faltan WHATSAPP_ACCESS_TOKEN o WHATSAPP_PHONE_NUMBER_ID)"
+    );
+  }
+
+  const res = await fetch(`https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to,
+      type: "text",
+      text: { body: body.slice(0, 4096) },
+    }),
+  });
+  const data = await res.json().catch(() => null);
+  return { ok: res.ok, status: res.status, data };
+}

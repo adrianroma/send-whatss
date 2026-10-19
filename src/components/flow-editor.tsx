@@ -28,7 +28,12 @@ type Kind =
   | "rules"
   | "action"
   | "determine";
-type FlowNodeData = { text: string };
+type FlowNodeData = {
+  text: string;
+  actionType?: "api" | "file";
+  method?: "GET" | "POST";
+  target?: string;
+};
 type FlowNode = Node<FlowNodeData, Kind>;
 
 const KINDS: Record<Kind, { label: string; style: string }> = {
@@ -88,6 +93,36 @@ function MessageNode({ id, type, data, selected }: NodeProps<FlowNode>) {
         onChange={(e) => updateNodeData(id, { text: e.target.value })}
         className="nodrag nowheel w-full resize-none rounded bg-white/60 p-1 text-sm outline-none dark:bg-black/30"
       />
+      {type === "action" && (
+        <div className="nodrag mt-1 space-y-1 text-xs">
+          <div className="flex gap-1">
+            <select
+              value={data.actionType ?? "api"}
+              onChange={(e) => updateNodeData(id, { actionType: e.target.value as "api" | "file" })}
+              className="rounded bg-white/60 p-1 dark:bg-black/30"
+            >
+              <option value="api">API</option>
+              <option value="file">Archivo</option>
+            </select>
+            {(data.actionType ?? "api") === "api" && (
+              <select
+                value={data.method ?? "GET"}
+                onChange={(e) => updateNodeData(id, { method: e.target.value as "GET" | "POST" })}
+                className="rounded bg-white/60 p-1 dark:bg-black/30"
+              >
+                <option>GET</option>
+                <option>POST</option>
+              </select>
+            )}
+          </div>
+          <input
+            value={data.target ?? ""}
+            onChange={(e) => updateNodeData(id, { target: e.target.value })}
+            placeholder={(data.actionType ?? "api") === "api" ? "https://…" : "public/archivo.csv"}
+            className="w-full rounded bg-white/60 p-1 outline-none dark:bg-black/30"
+          />
+        </div>
+      )}
       {type === "determine" ? (
         <>
           <div className="mt-1 flex justify-between px-4 text-[10px] font-bold opacity-70">
