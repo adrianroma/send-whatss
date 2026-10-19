@@ -9,6 +9,7 @@ import {
   parseAssignment,
   RESERVED_VARS,
   show,
+  splitNodeName,
   type Vars,
 } from "@/lib/flow-vars";
 
@@ -100,7 +101,15 @@ export async function runFlow(
   const nodes = (flow?.nodes ?? []) as FNode[];
   const edges = (flow?.edges ?? []) as FEdge[];
   const byId = new Map(nodes.map((n) => [n.id, n]));
-  const rawText = (n?: FNode) => n?.data?.text?.trim() ?? "";
+  const rawText = (n?: FNode) => splitNodeName(n?.data?.text ?? "").body.trim();
+  const nameOf = (n: FNode) => splitNodeName(n.data?.text ?? "").name;
+  // Exposes what a named node received/generated as {name.input} / {name.output}.
+  const record = (n: FNode, output: string | null) => {
+    const name = nameOf(n);
+    if (!name) return;
+    vars[`${name}.input`] = message;
+    vars[`${name}.output`] = output;
+  };
   const outs = (id: string) => edges.filter((e) => e.source === id && byId.has(e.target));
   const isUser = (n: FNode) => n.type === "userRequest" || n.type === "userResponse";
 
@@ -203,6 +212,7 @@ export async function runFlow(
     } else if (node.type === "botResponse" || node.type === "botRequest") {
       const text = interpolate(readLines(node).join("\n"), vars).trim();
       vars.output = text;
+      record(node, text);
       if (text) result.replies.push({ kind: node.type, text });
       if (node.type === "botRequest") {
         result.cursor = id;
@@ -223,6 +233,7 @@ export async function runFlow(
         result.actions.push({ text: label, type, target, ok: false, preview: vars.data });
       }
       vars.output = vars.data;
+      record(node, vars.data);
       await walk(id);
     } else if (node.type === "rules") {
       const lines = readLines(node, true);
@@ -240,6 +251,7 @@ export async function runFlow(
         salida = verdict.salida || String(cumple);
       }
       vars.output = salida;
+      record(node, salida);
       if (!cumple) return;
       const { edge } = await choose(node, prose.join("\n"), outs(id), "Elige la salida a la que debe continuar el flujo.");
       if (edge) await visit(edge.target, id);
@@ -247,6 +259,7 @@ export async function runFlow(
       // await: wait for the next user node; pause: wait, then continue from here on the next message.
       readLines(node);
       vars.output = null;
+      record(node, null);
       result.cursor = id;
       done = true;
     } else if (node.type === "stop") {
@@ -274,6 +287,7 @@ export async function runFlow(
         "El contexto del nodo es un prompt (las líneas con '=>' son condiciones ya evaluadas). Compáralo con el mensaje del usuario y elige la salida siguiente (Sí/No u otra)."
       );
       vars.output = salida || null;
+      record(node, vars.output);
       if (edge) await visit(edge.target, id);
     }
   }
@@ -302,6 +316,7 @@ export async function runFlow(
     // 2. Walk the flow from there.
     if (entry) {
       userContext = interpolate(readLines(entry).join("\n"), vars);
+      record(entry, message);
       await walk(entry.id);
     }
   }

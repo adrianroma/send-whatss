@@ -11,6 +11,14 @@ const HAS_PLACEHOLDER = /\{+\s*[A-Za-z_][\w.]*\s*\}+/;
 const ASSIGNMENT = /^\s*\{+\s*([A-Za-z_][\w.]*)\s*\}+\s*={1,2}(?!=)\s*(.*)$/;
 const OPERATOR = /(==|&&|\|\||!!|\s(?:like|not in|yes in)\s)/i;
 
+const NODE_NAME = /^\s*\[([A-Za-z_]\w*)\]\s*/;
+
+/** A node is named with `[node_name]` at the start of its text. */
+export function splitNodeName(text: string): { name: string | null; body: string } {
+  const m = NODE_NAME.exec(text);
+  return m ? { name: m[1], body: text.slice(m[0].length) } : { name: null, body: text };
+}
+
 export const RESERVED_VARS = ["input", "output", "data"];
 
 export function show(v: string | null | undefined) {

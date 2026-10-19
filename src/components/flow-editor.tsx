@@ -2,6 +2,7 @@
 
 import "@xyflow/react/dist/style.css";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { splitNodeName } from "@/lib/flow-vars";
 import {
   addEdge,
   Background,
@@ -101,7 +102,14 @@ function MessageNode({ id, type, data, selected }: NodeProps<FlowNode>) {
     >
       {type !== "start" && <Handle type="target" position={Position.Top} />}
       <div className="mb-1 flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-wide opacity-70">{kind.label}</span>
+        <span className="truncate text-[10px] font-bold uppercase tracking-wide opacity-70">
+          {kind.label}
+          {splitNodeName(data.text).name && (
+            <span className="ml-1 rounded bg-black/10 px-1 normal-case dark:bg-white/20">
+              [{splitNodeName(data.text).name}]
+            </span>
+          )}
+        </span>
         <button
           type="button"
           title="Eliminar nodo"

@@ -22,6 +22,11 @@ export default function FlowPage() {
             anterior · <code>{"{data}"}</code> = resultado de la última acción.
           </li>
           <li>
+            Nombra un nodo con <code>[nombre_del_nodo]</code> al inicio de su texto (letras, números y _). El nombre no
+            se muestra al usuario; con él puedes leer <code>{"{nombre_del_nodo.output}"}</code> (lo que generó) y{" "}
+            <code>{"{nombre_del_nodo.input}"}</code> desde nodos posteriores.
+          </li>
+          <li>
             Asignar (en cualquier nodo que no sea Reglas/Determinar): <code>{"{ciudad} = {input}"}</code>. La línea no
             se muestra al usuario.
           </li>
